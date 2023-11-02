@@ -3,6 +3,8 @@
 
 #include <iostream>
 
+#include "Renderer/ShaderProgram.h"
+
 // Массив вершин.
 // Вертексный шейдер будет запускаться столько раз, сколько у нас вершин.
 // Фрагментный шейдер будет запускаться столько раз, сколько у нас видимых фрагментов (пикселей).
@@ -97,23 +99,15 @@ int main(void)
 
     glClearColor(1, 1, 0, 1);
 
-    
-    GLuint vertexShaderID = glCreateShader(GL_VERTEX_SHADER);   // Создаём индентификатор вертексного шейдера..
-    glShaderSource(vertexShaderID, 1, &vertex_shader, nullptr); // Передаём вертексный шейдер по идентификатору.
-    glCompileShader(vertexShaderID);                            // Компилируем код шейдера.
+    std::string vertexShader(vertex_shader);
+    std::string fragmentShader(fragment_shader);
+    Renderer::ShaderProgram shaderProgram(vertexShader, fragmentShader);
 
-    GLuint fragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);   // Создаём индентификатор фрагментого шейдера.
-    glShaderSource(fragmentShaderID, 1, &fragment_shader, nullptr); // Передаёт фрагментный шейдер по идентификатору.
-    glCompileShader(fragmentShaderID);                              // Компилируем фрагментный шейдер.
-
-    GLuint shaderProgramID = glCreateProgram();          // Создаём программу для линковки шейдеров.
-    glAttachShader(shaderProgramID, vertexShaderID);     // Линкуем индентификатор вертексного шейдера.
-    glAttachShader(shaderProgramID, fragmentShaderID);   // Линкуем идентификатор фрагментного шейдера.
-    glLinkProgram(shaderProgramID);                      // Соединяем.
-
-    // После линковки программы шейдеры можно удалить.
-    glDeleteShader(vertexShaderID);     // Удаляем вертексный шейдер.
-    glDeleteShader(fragmentShaderID);   // Удаляем фрагментный шейдер.
+    if (!shaderProgram.isCompiled())
+    {
+        std::cerr << "Cant't create shader program!" << std::endl;
+        return -1;
+    }
 
     // Теперь шейдеры нужно передать нашей видеокарте.
     GLuint pointsVboID = 0;                                                 // Создаём идентификатор буффера вершин.
@@ -145,8 +139,8 @@ int main(void)
         /* Render here */
         glClear(GL_COLOR_BUFFER_BIT);
 
-        // Отрисовка треугольника.
-        glUseProgram(shaderProgramID);      // Подключаем шейдеры.
+        // Отрисовка треугольника. 
+        shaderProgram.use();
         glBindVertexArray(vaoID);           // Какой вертекс отобразить.
         glDrawArrays(GL_TRIANGLES, 0, 3);   // Отрисовка треугольника.
 
