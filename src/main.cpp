@@ -4,6 +4,7 @@
 #include <iostream>
 
 #include "Renderer/ShaderProgram.h"
+#include "Resources/ResourceManager.h"
 
 // Массив вершин.
 // Вертексный шейдер будет запускаться столько раз, сколько у нас вершин.
@@ -20,27 +21,6 @@ GLfloat colors[] = {
     0.0f, 1.0f, 0.0f,
     0.0f, 0.0f, 1.0f
 };
-
-
-// Вертексный шейдер.
-// Пишется на языке GLSL (OpengGL Shader Language).
-const char* vertex_shader =
-"#version 460\n"                                    // (Макрос) Версия шейдера 4.6.0.
-"layout(location = 0) in vec3 vertex_position;\n"   // Входной параметр - позиция вершины.
-"layout(location = 1) in vec3 vertex_color;\n"      // Входной параметр - цвет вершины.
-"out vec3 color;\n"                                 // Выходной параметр - цвет.
-"void main() {\n"                                   // Объявление функции Main.
-"   color = vertex_color;\n"                        // Присваиваем выходному параметру входной параметр.
-"   gl_Position = vec4(vertex_position, 1.0)\n;"    // Присваиваем позицию из входного параметра (4й параметр - это перспектива).
-"}";
-
-const char* fragment_shader =
-"#version 460\n"                                    // (Макрос) Версия шейдера 4.6.0.
-"in vec3 color;"                                    // Входной параметр - цвет.
-"out vec4 frag_color;"                              // Выходной параметр - интерполяция цвета.
-"void main() {"                                     // Объявляем функцию Main.
-"   frag_color = vec4(color, 1.0);"                 // Присваиваем выходному параметру текущий цвет.
-"}";
 
 
 int g_windowSizeX = 640;
@@ -61,7 +41,7 @@ void glfwKeyCallback(GLFWwindow* window, int key, int scancode, int action, int 
     }
 }
 
-int main(void)
+int main(int argc, char* argv[])
 {
     /* Initialize the library */
     if (!glfwInit())
@@ -99,13 +79,12 @@ int main(void)
 
     glClearColor(1, 1, 0, 1);
 
-    std::string vertexShader(vertex_shader);
-    std::string fragmentShader(fragment_shader);
-    Renderer::ShaderProgram shaderProgram(vertexShader, fragmentShader);
+    ResourceManager resourceManager(argv[0]);
+    auto defaultShaderProgram = resourceManager.loadShaders("DefaultShader", "res/shaders/vertex.txt", "res/shaders/fragment.txt");
 
-    if (!shaderProgram.isCompiled())
+    if (defaultShaderProgram == nullptr)
     {
-        std::cerr << "Cant't create shader program!" << std::endl;
+        std::cerr << "Can't create shader program: " << "DefaultShader" << std::endl;
         return -1;
     }
 
@@ -140,7 +119,7 @@ int main(void)
         glClear(GL_COLOR_BUFFER_BIT);
 
         // Отрисовка треугольника. 
-        shaderProgram.use();
+        defaultShaderProgram->use();
         glBindVertexArray(vaoID);           // Какой вертекс отобразить.
         glDrawArrays(GL_TRIANGLES, 0, 3);   // Отрисовка треугольника.
 
@@ -150,6 +129,7 @@ int main(void)
         /* Poll for and process events */
         glfwPollEvents();
     }
+    defaultShaderProgram->~ShaderProgram();
 
     glfwTerminate();
     return 0;
